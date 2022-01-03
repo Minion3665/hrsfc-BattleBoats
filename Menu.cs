@@ -5,7 +5,7 @@ namespace BattleShips
 {
     public class Menu
     {
-        List<string> choices = new List<string>();
+        public List<string> choices = new List<string>();
 
         public Menu AddChoice(string prompt)
         {

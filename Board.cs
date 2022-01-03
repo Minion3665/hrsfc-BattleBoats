@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace BattleShips
 {
     public class Board
     {
-        private readonly string[,] _boardState;
         private readonly Random _random;
 
         private const string EmptyBoardSpaceSymbol = "•";
         public Board(Random random = null, int size = 10)
         {
             _random = random ?? new Random();
-            _boardState = new string[size, size];
+            State = new string[size, size];
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
                 {
-                    _boardState[i, j] = EmptyBoardSpaceSymbol;
+                    State[i, j] = EmptyBoardSpaceSymbol;
                 }
             }
         }
@@ -74,18 +74,18 @@ namespace BattleShips
                 if (key.Key == ConsoleKey.Spacebar)
                 {
                     rotate = !rotate;
-                } else if (key.Key - ConsoleKey.A < _boardState.GetLength(0) && key.Key - ConsoleKey.A >= 0)
+                } else if (key.Key - ConsoleKey.A < State.GetLength(0) && key.Key - ConsoleKey.A >= 0)
                 {
                     coordinateX = key.Key - ConsoleKey.A;
-                } else if (key.Key - ConsoleKey.D0 < _boardState.GetLength(1) && key.Key - ConsoleKey.D0 >= 0)
+                } else if (key.Key - ConsoleKey.D0 < State.GetLength(1) && key.Key - ConsoleKey.D0 >= 0)
                 {
-                    if ((coordinateY + 1) * 10 + (key.Key - ConsoleKey.D0) - 1 < _boardState.GetLength(0))
+                    if ((coordinateY + 1) * 10 + (key.Key - ConsoleKey.D0) - 1 < State.GetLength(0))
                     {
                         coordinateY = (coordinateY + 1) * 10 + (key.Key - ConsoleKey.D0) - 1;
                     }
                     else if (key.Key - ConsoleKey.D0 == 0)
                     {
-                        coordinateY = _boardState.GetLength(0) - 1;
+                        coordinateY = State.GetLength(0) - 1;
                     }
                     else
                     {
@@ -115,11 +115,11 @@ namespace BattleShips
 
                 if (rotate)
                 {
-                    if (coordinateY + spaceLength > _boardState.GetLength(1)) selectionLeavesBoard = true;
+                    if (coordinateY + spaceLength > State.GetLength(1)) selectionLeavesBoard = true;
                 }
                 else
                 {
-                    if (coordinateX + spaceLength > _boardState.GetLength(0)) selectionLeavesBoard = true;
+                    if (coordinateX + spaceLength > State.GetLength(0)) selectionLeavesBoard = true;
                 }
 
                 var selectionCrossesOther = false;
@@ -151,8 +151,8 @@ namespace BattleShips
             do
             {
                 // Only include coordinates that don't leave the board
-                var coordinateX = _random.Next(0, _boardState.GetLength(0) - (!rotate ? spaceLength : 0)); 
-                var coordinateY = _random.Next(0, _boardState.GetLength(1) - (rotate ? spaceLength : 0));
+                var coordinateX = _random.Next(0, State.GetLength(0) - (!rotate ? spaceLength : 0)); 
+                var coordinateY = _random.Next(0, State.GetLength(1) - (rotate ? spaceLength : 0));
                 coordinate = new Tuple<int, int>(coordinateX, coordinateY);
             } while (Overlaps(coordinate, rotate, spaceLength));
             
@@ -163,21 +163,21 @@ namespace BattleShips
             foreach (var singleCoordinate in GetSelectedSpaces(coordinate, rotation, length))
             {
                 var (x, y) = singleCoordinate;
-                _boardState[x, y] = character.ToString();
+                State[x, y] = character.ToString();
             }
         }
         public bool HasNoShips(char[] shipCharacters = null)
         {
             shipCharacters = shipCharacters ?? new[] {'O'};
 
-            return shipCharacters.All(character => _boardState.Cast<string>().All(space => space != character.ToString()));
+            return shipCharacters.All(character => State.Cast<string>().All(space => space != character.ToString()));
         }
         public bool Overlaps(Tuple<int, int> coordinate, bool rotation = false, int length = 1)
         {
             foreach (var singleCoordinate in GetSelectedSpaces(coordinate, rotation, length))
             {
                 var (x, y) = singleCoordinate;
-                if (_boardState[x, y] != EmptyBoardSpaceSymbol)
+                if (State[x, y] != EmptyBoardSpaceSymbol)
                 {
                     return true;
                 }
@@ -200,16 +200,16 @@ namespace BattleShips
         {
             // Write the letters along the top of the board
             Console.Write("/ ");
-            for (var i = 0; i < _boardState.GetLength(0); i++)
+            for (var i = 0; i < State.GetLength(0); i++)
             {
                 Console.Write($" {(char) ('A' + i)}");
             }
             Console.WriteLine();
             
-            for (var j = 0; j < _boardState.GetLength(1); j++)
+            for (var j = 0; j < State.GetLength(1); j++)
             {
                 Console.Write((j + 1).ToString().PadRight(2));
-                for (var i = 0; i < _boardState.GetLength(0); i++)
+                for (var i = 0; i < State.GetLength(0); i++)
                 {
                     Console.Write(" ");
                     
@@ -232,11 +232,22 @@ namespace BattleShips
                     {
                         Console.ResetColor();
                     }
-                    Console.Write($"{_boardState[i, j]}");
+                    Console.Write($"{State[i, j]}");
                 }
                 Console.ResetColor();
                 Console.WriteLine();
             }
         }
+        
+        public static Board FromState(Random random, string[,] boardState)
+        {
+            var board = new Board(random, boardState.GetLength(0))
+            {
+                State = boardState
+            };
+            return board;
+        }
+
+        public string[,] State { get; private set; }
     }
 }

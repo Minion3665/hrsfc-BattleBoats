@@ -4,22 +4,16 @@ namespace BattleShips
 {
     public class Game
     {
-        private Board _aiBoard;
-        private Board _playerBoard;
-        private Board _aiShotsBoard;
-        private Board _playerShotsBoard;
         private int[] _shipLengths;
         private bool _gameOver;
         
+        private SaveData _saveData;
+        
         private readonly Random _random = new Random();
-        public Game(int[] shipLengths = null)
+        public Game(int[] shipLengths = null, SaveData save = null)
         {
             _shipLengths = shipLengths ?? new[] {5, 4, 3, 3, 2};
-            _aiBoard = new Board(_random);
-            _playerBoard = new Board(_random);
-            
-            _aiShotsBoard = new Board(_random);
-            _playerShotsBoard = new Board(_random);
+            _saveData = save;
         }
         public void Start()
         {
@@ -28,32 +22,50 @@ namespace BattleShips
                 Console.WriteLine("Programmer error: Game is already over");
                 return;
             }
-            foreach (var shipLength in _shipLengths)
+            
+            if (_saveData == null)
             {
-                _playerBoard.Render();
-                var (coordinate, rotation) = _playerBoard.PickSpaceInteractive(
-                    "Please enter a coordinate for your boat",
-                    "Placing",
-                    shipLength);
 
-                _playerBoard.Place(coordinate, rotation, shipLength);
-            }
-
-            foreach (var shipLength in _shipLengths)
-            {
-                var (coordinate, rotation) = _aiBoard.PickSpaceRandom(shipLength);
+                var playerBoard = new Board(_random);
+                var aiBoard = new Board(_random);
+                var playerShotsBoard = new Board(_random);
+                var aiShotsBoard = new Board(_random);
                 
-                _aiBoard.Place(coordinate, rotation, shipLength);
+                foreach (var shipLength in _shipLengths)
+                {
+                    playerBoard.Render();
+                    var (coordinate, rotation) = playerBoard.PickSpaceInteractive(
+                        "Please enter a coordinate for your boat",
+                        "Placing",
+                        shipLength);
+
+                    playerBoard.Place(coordinate, rotation, shipLength);
+                }
+
+                foreach (var shipLength in _shipLengths)
+                {
+                    var (coordinate, rotation) = aiBoard.PickSpaceRandom(shipLength);
+
+                    aiBoard.Place(coordinate, rotation, shipLength);
+
+                    /*// For debugging only
+                    Console.WriteLine($"{coordinate} {rotation}");
+                    _aiBoard.Render();
+                    Console.Read();*/
+                }
+
+                Console.WriteLine("Thank you for picking your ships.\nIt's time to play!");
                 
-                /*// For debugging only
-                Console.WriteLine($"{coordinate} {rotation}");
-                _aiBoard.Render();
-                Console.Read();*/
+                _saveData = new SaveData()
+                {
+                    AiBoard = aiBoard,
+                    PlayerBoard = playerBoard,
+                    AiShotsBoard = aiShotsBoard,
+                    PlayerShotsBoard = playerShotsBoard,
+                    PlayerTurn = true
+                };
             }
-
-            Console.WriteLine("Thank you for picking your ships.\nIt's time to play!");
-
-            var playerTurn = true;
+            
             _gameOver = false;
             
             while (!_gameOver)
@@ -63,28 +75,28 @@ namespace BattleShips
                 Board shotBoard;
                 Board shipBoard;
                 
-                if (playerTurn)
+                if (_saveData.PlayerTurn ?? true)
                 {
                     Console.Clear();
                     Console.WriteLine("\nIt's your turn! Here's your board:");
-                    _playerBoard.Render();
+                    _saveData.PlayerBoard.Render();
                     Console.WriteLine("\nHere's the shots you've made:");
-                    _playerShotsBoard.Render();
+                    _saveData.PlayerShotsBoard.Render();
                     Console.WriteLine("Press a key to make a move...");
                     Console.Read();
-                    (coordinate, _) = _playerShotsBoard.PickSpaceInteractive(
+                    (coordinate, _) = _saveData.PlayerShotsBoard.PickSpaceInteractive(
                         "Please enter a coordinate for your shot",
                         "Shooting");
 
-                    shotBoard = _playerShotsBoard;
-                    shipBoard = _aiBoard;
+                    shotBoard = _saveData.PlayerShotsBoard;
+                    shipBoard = _saveData.AiBoard;
                 }
                 else
                 {
-                    (coordinate, _) = _aiShotsBoard.PickSpaceRandom();
+                    (coordinate, _) = _saveData.AiShotsBoard.PickSpaceRandom();
                     
-                    shotBoard = _aiShotsBoard;
-                    shipBoard = _playerBoard;
+                    shotBoard = _saveData.AiShotsBoard;
+                    shipBoard = _saveData.PlayerBoard;
                 }
 
                 if (shipBoard.Overlaps(coordinate))
@@ -99,19 +111,22 @@ namespace BattleShips
                 if (shipBoard.HasNoShips())
                 {
                     Console.Clear();
-                    Console.WriteLine($"Game over..., the {(playerTurn ? "player" : "ai")} won!");
+                    Console.WriteLine($"Game over..., the {(_saveData.PlayerTurn ?? true ? "player" : "ai")} won!");
                     _gameOver = true;
                 }
 
-                playerTurn = !playerTurn;
+                _saveData.PlayerTurn = !_saveData.PlayerTurn ?? false;
+                _saveData.Save();
             }
+            
+            _saveData.Delete();
             
             Console.WriteLine("Here were the were the ships at the end of the game...:");
             Console.WriteLine("For the player...");
-            _playerBoard.Render();
+            _saveData.PlayerBoard.Render();
             Console.WriteLine("");
             Console.WriteLine("and for the AI...");
-            _aiBoard.Render();
+            _saveData.AiBoard.Render();
             
             Console.WriteLine("Thank you for playing, press enter to return to the menu...");
             Console.ReadLine();
