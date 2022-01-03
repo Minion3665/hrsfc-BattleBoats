@@ -1,0 +1,30 @@
+* Battle boats success criteria
+- Create a menu that lets the player 'play new game', 'view instructions' or 'quit'
+
+** When playing...
+- Create a grid for each player's ships
+- Let player place their ships
+  - Let player place ships of different sizes
+  - Let player rotate ships before placing
+- Place computer's ships randomly
+  - Replace ships if they overlap
+- Display the board to the player, exclude the positions of AI ships
+- Let the player pick where they want to hit
+- Tell them if they hit in the right spot
+- If they hit, check if the ship is sunk
+- If a ship was sunk, chcek if anyone won
+- Generate a spot on the computer's turn
+  - Generate close to hit-but-not-sunk ships if any exist
+- Tell the player if the computer hit or missed the right spot
+- If they hit, check if the ship is sunk
+- If a ship was sunk, check if anyone won
+
+** When a player wins
+- Display the winner
+- Return to the menu
+
+** When displaying instructions
+- Print out the instructions to the terminal
+
+** When quitting
+- Just quit
